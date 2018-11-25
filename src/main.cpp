@@ -362,23 +362,26 @@ int main() {
           	json msgJson;
 						FSM fsm(state, lane);
            	bool change = false;
-						state = fsm.GetNextState(sensor_fusion, car_s, car_d, previous_path_x.size());
+						state = fsm.GetNextState(sensor_fusion, car_s, car_d, car_speed, previous_path_x.size());
+
+						if (state == TOO_CLOSE) {
+							double new_vel = fsm.GetVelocity();
 #ifdef LOG
               std::ofstream file("data_dump.log", std::ios_base::app);
-              file << "state: " << state << endl;
+              file << "new velocity: " << new_vel << ", reference velocity: " << ref_vel << endl;
 							file.close();
 #endif
-						if (state == TOO_CLOSE) {
-							ref_vel -= 0.224;
+							if (ref_vel >= new_vel)
+								ref_vel -= 0.224;
 						}
 						else if (state == SHIFT_LEFT) {
 							lane = Lanes((int)lane - 1);
-							// ref_vel -= 2.24*5;
+							ref_vel -= 0.224;
               change = true;
 						}
 						else if (state == SHIFT_RIGHT) {
 							lane = Lanes((int)lane + 1);
-							// ref_vel -= 2.24*5;
+							ref_vel -= 0.224;
               change = true;
 						}
 						else if (state == KEEP_LANE && ref_vel < 49.5) {
@@ -394,21 +397,6 @@ int main() {
 
             if (prev_state != state) {
               prev_state = state;
-#ifdef LOG
-              std::ofstream file("data_dump.log", std::ios_base::app);
-//              file << "state: " << state << endl;
-              file << "lane: " << lane << endl;
-              file << "ref vel: " << ref_vel << endl;
-              // file << "next vals: " << endl;
-
-              // for (int i = 0; i < next_vals.size(); ++i) {
-              //   for (int j = 0; j < next_vals[i].size(); ++j) {
-              //     file << next_vals[i][j] << "\t";  
-              //   }
-              //   file << endl;
-              // }
-              file.close();
-#endif
             }
 
           	msgJson["next_x"] = next_vals[0];

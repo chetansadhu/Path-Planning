@@ -11,11 +11,11 @@ FSM::~FSM() {
 }
 
 
-int FSM::CheckSafety(Lanes lane, int &id) {
+int FSM::CheckSafety(Lanes lane, int &id, bool isLaneChange) {
   id = 1;
   for (int i = 0; i < other_cars_.size(); ++i) {
     if (IsInLane(i, lane)) {
-      if (IsClose(i)) {
+      if (IsClose(i, isLaneChange)) {
         id = i;
         return 1;
       }
@@ -28,14 +28,18 @@ int FSM::CheckSafety(Lanes lane, int &id) {
 }
 
 
-bool FSM::IsClose(int id) {
+bool FSM::IsClose(int id, bool isLaneChange) {
   double s = other_cars_[id][5];
   double vx = other_cars_[id][3];
   double vy = other_cars_[id][4];
   double speed = sqrt(vx*vx + vy*vy);
 
   s += (/*prev_size_ **/ timestep * speed);
-  return (((s > car_[0]) && (s - car_[0]) < 30.0) /*|| ((s <= car_[0]) && (car_[0] - s) < 40.0)*/);
+  double car_s = car_[0] + car_[2] * timestep;
+  if (!isLaneChange)
+    return (((s >= car_s) && (s - car_s) < 30.0));
+  else 
+    return (((s >= car_s) && (s - car_s) < 30.0) || ((s < car_s) && (car_s - s) < 20.0));
 }
 
 bool FSM::IsSpeedMaintainable(int id) {
@@ -51,43 +55,44 @@ bool FSM::IsSpeedMaintainable(int id) {
 
 
 
-States FSM::GetNextState(std::vector<std::vector<double>> sensor_fusion, double s, double d, int prev_size) {
+States FSM::GetNextState(std::vector<std::vector<double>> sensor_fusion, double s, double d, double v, int prev_size) {
   other_cars_ = sensor_fusion;
   car_.clear();
   car_.push_back(s);
   car_.push_back(d);
+  car_.push_back(v);
 
   int ahead_id = 0;
   if (CheckSafety(current_lane_, ahead_id) == 0)
     return KEEP_LANE;
   else {
     if (current_lane_ == MIDDLE) {
-      if (CheckSafety(LEFT, ahead_id) == 0) {
+      if (CheckSafety(LEFT, ahead_id, true) == 0) {
         return SHIFT_LEFT;
       }
-      else if (CheckSafety(RIGHT, ahead_id) == 0) {
+      else if (CheckSafety(RIGHT, ahead_id, true) == 0) {
         return SHIFT_RIGHT;
       }
     }
 
     else if (current_lane_ == RIGHT) {
-      if (CheckSafety(MIDDLE, ahead_id) == 0) {
+      if (CheckSafety(MIDDLE, ahead_id, true) == 0) {
         return SHIFT_LEFT;
       }
     }
 
     else if (current_lane_ == LEFT) {
-      if (CheckSafety(MIDDLE, ahead_id) == 0) {
+      if (CheckSafety(MIDDLE, ahead_id, true) == 0) {
         return SHIFT_RIGHT;
       }
     }
   }
-  // float vx = other_cars_[ahead_id][3];
-  // float vy = other_cars_[ahead_id][4];
-  // float v = sqrt(vx*vx + vy*vy);
-  // float max_velocity_in_front = (other_cars_[ahead_id][5] - car_[0]) + v - 0.5 * (car_[3]);
-  // float max_velocity_accel_limit = max_acceleration/timestep + car_[2];
-  // new_velocity_ = std::min(std::min(max_velocity_in_front, max_velocity_accel_limit), target_speed);
+  float vx = other_cars_[ahead_id][3];
+  float vy = other_cars_[ahead_id][4];
+  float other_v = sqrt(vx*vx + vy*vy);
+  float max_velocity_in_front = /*(other_cars_[ahead_id][5] - car_[0]) + other_v*timestep*/other_v;
+  float max_velocity_accel_limit = max_acceleration*timestep + car_[2];
+  new_velocity_ = /*std::min(std::min(max_velocity_in_front, max_velocity_accel_limit), target_speed)*/max_velocity_in_front;
   return TOO_CLOSE;
  
   // States state;
@@ -315,7 +320,7 @@ std::vector<float> FSM::GetKinematics(Lanes lane) {
 
 
 bool FSM::GetVehicleAhead(Lanes lane, int &id) {
-  int min_s = max_s;
+  float min_s = max_s;
   bool found_vehicle = false;
   id = -1;
   for (int i = 0; i < other_cars_.size(); ++i) {
@@ -324,8 +329,8 @@ bool FSM::GetVehicleAhead(Lanes lane, int &id) {
     float vy = other_cars_[id][4];
     float speed = sqrt(vx*vx + vy*vy);
 
-    s += (prev_size_ * timestep * speed);
-    if (IsInLane(i, lane) && (s > car_[0] && s < min_s /*&& (s - car_[0]) < 30*/)) {
+    s += (timestep * speed);
+    if (IsInLane(i, lane) && (s > car_[0] && s < min_s )) {
       min_s = s;
       id = i;
       found_vehicle = true;
@@ -336,7 +341,7 @@ bool FSM::GetVehicleAhead(Lanes lane, int &id) {
 
 
 bool FSM::GetVehicleBehind(Lanes lane, int &id) {
-  int maxs = -1;
+  float maxs = -1;
   bool found_vehicle = false;
   id = -1;
   for (int i = 0; i < other_cars_.size(); ++i) {
@@ -346,7 +351,7 @@ bool FSM::GetVehicleBehind(Lanes lane, int &id) {
     float speed = sqrt(vx*vx + vy*vy);
 
     s += (prev_size_ * timestep * speed);
-    if (IsInLane(i, lane) && (car_[0] > s && s > maxs /*&& (car_[0] - s) < 30*/)) {
+    if (IsInLane(i, lane) && (car_[0] > s && s > maxs)) {
       maxs = s;
       id = i;
       found_vehicle = true;
