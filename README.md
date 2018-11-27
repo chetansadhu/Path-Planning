@@ -20,16 +20,16 @@ If there is no car in front in 30m distance in `s` coordinates the car will be i
 
 If there's a car is in front in 30m distance in `s` coordinates the car will look at the other lanes to switch.
 To switch:
-- If the car is in `MIDDLE` lane, then there is a possibility that it can switch to either `LEFT` or `RIGHT` lane. So each lane is checked for the safety to see that no car is ahead in 30m range and there is no car behind 20m.
+- If the car is in `MIDDLE` lane, then there is a possibility that it can switch to either `LEFT` or `RIGHT` lane. So each lane is checked for the safety to see that no car is ahead in 30m range and there is no car behind in 20m range.
     - If both lanes are safe, then the car will switch to a lane where the car in that lane is far ahead.
     - If one of the lane is safe it is switched to that lane.
 - If the car is in `LEFT` lane, then it will switch right to the `MIDDLE` lane if it is safe.
 - If the car is in `RIGHT` lane, then it will switch left to the `MIDDLE` lane if it is safe.
 
-If the lane switch is not feasible and a car is in front then the ego car will enter to `TOO_CLOSE` state. In this state the speed of the front vehicle is calculated and the speed is reduced until that velocity and is maintained in the same speed.
+If the lane switch is not feasible and a car is in front then the ego car will enter to `TOO_CLOSE` state. In this state the speed of the front vehicle is calculated and the speed is reduced until that speed and is maintained in the same speed as the vehicle ahead.
 
-After the speed and lane is calculated, next is calculation of waypoints. Waypoints are calculated using spline library. A spline is built with one previous point, one present point and two future predicted points. Path is calculated for a total 50 points and a distance of 50m. 
+After the speed and lane is calculated, next is calculation of waypoints. Waypoints are calculated using spline library. A spline is constructed with one previous point, one present point and two future predicted points. Path is calculated for a total 50 points and a distance of 50m. 
 
-When calculating the next trajectory, to avoid jerk the end `s` coordinate of the previous path is given for the trajectory calculaton using spline.
+When calculating the next trajectory, to avoid jerk, the end `s` coordinate of the previous path is given for the trajectory calculaton.
 
 Video of the path planner in action can be found [here](https://drive.google.com/file/d/1pc27BymcaEVGrGogHLlMAZNK8bwAj801/view?usp=sharing)
