@@ -9,14 +9,15 @@
 constexpr float max_s = 6945.554;
 constexpr float target_speed = 49.5f;
 constexpr float timestep = 0.02f;
-constexpr float max_acceleration = 2.0f;
 
+// enumeration for Lanes
 enum Lanes {
   LEFT,
   MIDDLE,
   RIGHT
 };
 
+// enumeration for states
 enum States {
   KEEP_LANE,
   SHIFT_RIGHT,
@@ -29,25 +30,20 @@ class FSM {
     FSM(States state, Lanes lane);
     ~FSM();
 
-    States GetNextState(std::vector<std::vector<double>> sensor_fusion, double s, double d, double v, int prev_size);
+    States GetNextState(std::vector<std::vector<double>> sensor_fusion, double s, double d, double v);
     double GetVelocity() const { return new_velocity_; }
 
   private:
     int CheckSafety(Lanes lane, int &id, bool isLaneChange = false);
     bool IsInLane(int vehicle_id, Lanes lane);
     bool IsClose(int vehicle_id, bool isLaneChange);
-    bool IsSpeedMaintainable(int vehicle_id);
-    std::vector<States> SuccessorStates();
-    std::vector<float> GetKinematics(Lanes lane);
-    bool GetVehicleAhead(Lanes lane, int &vehicle_id);
-    bool GetVehicleBehind(Lanes lane, int &vehicle_id);
+    bool GetVehicleAhead(Lanes lane, int &vehicle_id, float &vehicle_s);
 
   private:
     States current_state_;
     Lanes current_lane_;
     std::vector<std::vector<double> > other_cars_;
     std::vector<double> car_;
-    int prev_size_;
     double new_velocity_;
 };
 
