@@ -32,4 +32,4 @@ After the speed and lane is calculated, next is calculation of waypoints. Waypoi
 
 When calculating the next trajectory, to avoid jerk the end `s` coordinate of the previous path is given for the trajectory calculaton using spline.
 
-Video of the path planner in action can be found here[https://drive.google.com/file/d/1pc27BymcaEVGrGogHLlMAZNK8bwAj801/view?usp=sharing]
+Video of the path planner in action can be found [here](https://drive.google.com/file/d/1pc27BymcaEVGrGogHLlMAZNK8bwAj801/view?usp=sharing)
